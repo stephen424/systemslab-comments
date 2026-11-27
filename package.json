@@ -1,0 +1,35 @@
+{
+  "name": "@systemslab/comments",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inline comment threads for Systemslab.ai apps: highlight text, discuss it, and let an admin mark it incorporated or declined",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./styles.css": "./dist/styles.css"
+  },
+  "sideEffects": ["*.css"],
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && node -e \"require('fs').copyFileSync('src/styles.css','dist/styles.css')\"",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "lint": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.1.6",
+    "@testing-library/react": "^14.1.2",
+    "@types/react": "^18.2.47",
+    "@types/react-dom": "^18.2.18",
+    "jsdom": "^24.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.3"
+  }
+}

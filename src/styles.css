@@ -1,0 +1,72 @@
+/*
+ * Systemslab.ai comments. Colours come from the host app's variables where it has them (--accent, --line,
+ * --muted, --panel, --ink, --soft, --warn, --warn-soft, --ok), so the panel follows its theme and dark mode.
+ * Override any --slc-* variable to change one thing.
+ */
+:root{
+  --slc-accent:var(--accent,#2c56a0);
+  --slc-ink:var(--ink,#18202e);
+  --slc-muted:var(--muted,#5d6779);
+  --slc-line:var(--line,#dde1e8);
+  --slc-panel:var(--panel,#fff);
+  --slc-soft:var(--soft,#eef1f5);
+  --slc-mark:var(--warn-soft,#fbf1d9);
+  --slc-mark-strong:#f2d58a;
+  --slc-mark-line:var(--warn,#9a6a00);
+  --slc-ok:var(--ok,#2f7d4f);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--slc-mark-strong:#6b5420}}
+:root[data-theme="dark"]{--slc-mark-strong:#6b5420}
+
+.slc-mark{background:var(--slc-mark);color:inherit;border-bottom:2px solid var(--slc-mark-line);cursor:pointer;border-radius:2px;padding:0}
+.slc-mark--focused{background:var(--slc-mark-strong)}
+.slc-mark--draft{background:var(--slc-mark-strong);border-bottom-style:dashed;cursor:default}
+.slc-add{position:fixed;transform:translateX(-50%);z-index:50;font:inherit;font-size:13px;font-weight:600;padding:5px 12px;border-radius:999px;border:0;
+  background:var(--slc-accent);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.18);cursor:pointer}
+
+.slc-panel{display:flex;flex-direction:column;gap:10px;font-size:13.5px;color:var(--slc-ink)}
+.slc-title{display:flex;align-items:center;gap:8px;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--slc-muted);margin:0;font-weight:600}
+.slc-count{font-size:11px;letter-spacing:0;background:var(--slc-mark);color:var(--slc-ink);border-radius:999px;padding:0 7px;font-weight:600;text-transform:none}
+.slc-empty{color:var(--slc-muted);margin:0}
+.slc-thread{border:1px solid var(--slc-line);border-radius:8px;background:var(--slc-panel);padding:10px;display:flex;flex-direction:column;gap:8px}
+.slc-thread--focused{border-color:var(--slc-mark-line);box-shadow:0 0 0 1px var(--slc-mark-line)}
+.slc-thread--incorporated,.slc-thread--declined{opacity:.8}
+.slc-quote{margin:0;padding:2px 0 2px 8px;border-left:3px solid var(--slc-mark-line);color:var(--slc-muted);font-size:12.5px;max-height:5.4em;overflow:hidden;cursor:pointer}
+.slc-lost{display:block;margin-top:4px;color:var(--slc-mark-line);font-style:italic}
+.slc-resolution{font-size:12.5px;font-weight:600;color:var(--slc-ok)}
+.slc-thread--declined .slc-resolution{color:var(--slc-muted)}
+.slc-note{font-weight:400;color:var(--slc-ink);margin-top:2px;white-space:pre-wrap}
+.slc-comments{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.slc-meta{font-size:12px;color:var(--slc-muted)}
+.slc-meta strong{color:var(--slc-ink);font-weight:600}
+.slc-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}
+.slc-deleted{color:var(--slc-muted);font-style:italic}
+.slc-form{display:flex;flex-direction:column;gap:6px}
+.slc-form textarea,.slc-form input{width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid var(--slc-line);border-radius:6px;
+  background:var(--slc-panel);color:var(--slc-ink);resize:vertical}
+.slc-form textarea:focus,.slc-form input:focus{outline:2px solid var(--slc-accent);outline-offset:-1px}
+.slc-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.slc-actions button:not(.slc-link){font:inherit;font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:6px;border:1px solid var(--slc-line);
+  background:var(--slc-soft);color:var(--slc-ink);cursor:pointer}
+.slc-actions button[type="submit"]{background:var(--slc-accent);border-color:var(--slc-accent);color:#fff}
+.slc-actions button:disabled{opacity:.6;cursor:default}
+.slc-actions--quiet{gap:10px}
+.slc-link{all:unset;cursor:pointer;color:var(--slc-accent);font-size:12.5px}
+.slc-link:focus-visible{outline:2px solid var(--slc-accent)}
+.slc-admin{border-top:1px dashed var(--slc-line);padding-top:8px}
+.slc-mention-box{position:relative}
+.slc-mention{color:var(--slc-accent);font-weight:600}
+.slc-mention--me{background:var(--slc-mark);border-radius:3px;padding:0 2px}
+.slc-suggest{position:absolute;left:0;right:0;top:100%;z-index:40;list-style:none;margin:2px 0 0;padding:4px;background:var(--slc-panel);
+  border:1px solid var(--slc-line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.14);max-height:220px;overflow:auto}
+.slc-suggest li{padding:5px 8px;border-radius:4px;cursor:pointer}
+.slc-suggest li.slc-suggest--on,.slc-suggest li:hover{background:var(--slc-soft)}
+.slc-error{color:#b42318;font-size:12.5px}
+
+.slc-review{display:flex;flex-direction:column;gap:16px}
+.slc-tabs{display:flex;gap:4px;border-bottom:1px solid var(--slc-line)}
+.slc-tab{all:unset;cursor:pointer;padding:6px 12px;font-weight:600;color:var(--slc-muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.slc-tab--on{color:var(--slc-ink);border-bottom-color:var(--slc-accent)}
+.slc-tab:focus-visible{outline:2px solid var(--slc-accent)}
+.slc-group{display:flex;flex-direction:column;gap:8px;max-width:720px}
+.slc-group-title{display:flex;align-items:center;gap:10px;margin:0;font-size:15px}
