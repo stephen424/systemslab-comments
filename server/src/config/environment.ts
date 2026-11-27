@@ -17,10 +17,12 @@ export interface EnvironmentConfig {
   APPS: string[];
 }
 
-const nodeEnv = process.env.NODE_ENV || 'development';
+const nodeEnv = process.env.NODE_ENV || 'production';
 
+// This code is public, so a built-in fallback secret would let anyone sign tokens. Only local development
+// and tests may run without JWT_SECRET; anywhere else (Railway does not set NODE_ENV) the service refuses to start.
 const jwtSecret = process.env.JWT_SECRET || '';
-if (!jwtSecret && nodeEnv === 'production') {
+if (!jwtSecret && nodeEnv !== 'development' && nodeEnv !== 'test') {
   throw new Error('JWT_SECRET must be set (use the same value as the Quickbuild backend)');
 }
 
