@@ -1,4 +1,4 @@
-import { KeyboardEvent, useRef, useState } from 'react';
+import { KeyboardEvent, useLayoutEffect, useRef, useState } from 'react';
 import { useCommentsState } from './context.js';
 import { DraftText, mentionQuery, Person, suggest } from './mentions.js';
 
@@ -20,6 +20,14 @@ export function MentionTextarea({ value, onChange, label, placeholder, rows = 3,
   const [query, setQuery] = useState<{ start: number; query: string } | null>(null);
   const [active, setActive] = useState(0);
   const options = query ? suggest(people, query.query) : [];
+  // After a pick, put the caret just after the inserted name once React has rendered the new text.
+  const caretAfterPick = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (caretAfterPick.current === null || !ref.current) return;
+    ref.current.focus();
+    ref.current.setSelectionRange(caretAfterPick.current, caretAfterPick.current);
+    caretAfterPick.current = null;
+  }, [value.text]);
 
   const update = (text: string, caret: number) => {
     onChange({ ...value, text });
@@ -34,11 +42,7 @@ export function MentionTextarea({ value, onChange, label, placeholder, rows = 3,
     const text = value.text.slice(0, query.start) + inserted + value.text.slice(caret);
     onChange({ text, picked: [...value.picked.filter(p => p.id !== person.id), person] });
     setQuery(null);
-    const at = query.start + inserted.length;
-    requestAnimationFrame(() => {
-      ref.current?.focus();
-      ref.current?.setSelectionRange(at, at);
-    });
+    caretAfterPick.current = query.start + inserted.length;
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
