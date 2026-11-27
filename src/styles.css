@@ -54,6 +54,13 @@
 .slc-link{all:unset;cursor:pointer;color:var(--slc-accent);font-size:12.5px}
 .slc-link:focus-visible{outline:2px solid var(--slc-accent)}
 .slc-admin{border-top:1px dashed var(--slc-line);padding-top:8px}
+.slc-mention-box{position:relative}
+.slc-mention{color:var(--slc-accent);font-weight:600}
+.slc-mention--me{background:var(--slc-mark);border-radius:3px;padding:0 2px}
+.slc-suggest{position:absolute;left:0;right:0;top:100%;z-index:40;list-style:none;margin:2px 0 0;padding:4px;background:var(--slc-panel);
+  border:1px solid var(--slc-line);border-radius:6px;box-shadow:0 6px 18px rgba(0,0,0,.14);max-height:220px;overflow:auto}
+.slc-suggest li{padding:5px 8px;border-radius:4px;cursor:pointer}
+.slc-suggest li.slc-suggest--on,.slc-suggest li:hover{background:var(--slc-soft)}
 .slc-error{color:#b42318;font-size:12.5px}
 
 .slc-review{display:flex;flex-direction:column;gap:16px}

@@ -13,7 +13,7 @@ const thread = (over: Partial<Thread> = {}): Thread => ({
   resolution: null,
   created_by: 'u1',
   created_at: '2026-11-27T09:00:00Z',
-  comments: [{ id: 'c1', author_id: 'u1', author_name: 'Peet', body: 'Too tight for 6082', created_at: '2026-11-27T09:00:00Z', edited_at: null, deleted: false }],
+  comments: [{ id: 'c1', author_id: 'u1', author_name: 'Peet', body: 'Too tight for 6082', created_at: '2026-11-27T09:00:00Z', edited_at: null, deleted: false, mentions: [] }],
   ...over,
 });
 
@@ -28,6 +28,7 @@ const mockApi = (opts: { admin?: boolean; threads?: Thread[] } = {}) => {
     calls.push({ method, url, body });
     const ok = (data: unknown, status = 200) => new Response(JSON.stringify({ success: true, data }), { status });
     const path = new URL(url).pathname;
+    if (path.endsWith('/people')) return ok([{ id: 'u1', name: 'Peet' }, { id: 'u3', name: 'Stephen' }]);
     if (path.endsWith('/me')) return ok({ id: 'u2', name: 'Anna', can_comment: true, is_admin: Boolean(opts.admin) });
     if (path.endsWith('/threads') && method === 'GET') {
       const status = new URL(url).searchParams.get('status');
@@ -90,6 +91,20 @@ describe('comments components', () => {
     const post = calls.find(c => c.method === 'POST')!;
     expect(post.body).toMatchObject({ app: 'practice', target_type: 'item', target_id: 'PR-SM-001', target_rev: 'A', anchor: null, body: 'Needs a figure' });
     expect(await screen.findByText('Needs a figure')).toBeInTheDocument();
+  });
+
+  it('mentions someone picked from the list while typing @', async () => {
+    const calls = mockApi({ threads: [] });
+    render(<Page />);
+    await screen.findByText(/No open comments/);
+    const box = screen.getByLabelText('Comment on this page') as HTMLTextAreaElement;
+    await waitFor(() => expect(calls.some(c => c.url.endsWith('/people'))).toBe(true));
+    fireEvent.change(box, { target: { value: 'Please check @Ste', selectionStart: 17 } });
+    fireEvent.mouseDown(await screen.findByRole('option', { name: 'Stephen' }));
+    expect(box.value).toBe('Please check @Stephen ');
+    fireEvent.change(box, { target: { value: 'Please check @Stephen read this', selectionStart: 31 } });
+    await act(async () => fireEvent.click(screen.getByRole('button', { name: 'Comment' })));
+    expect(calls.find(c => c.method === 'POST')!.body).toMatchObject({ body: 'Please check @[Stephen](u3) read this' });
   });
 
   it('lets an admin mark a thread incorporated from the review list', async () => {

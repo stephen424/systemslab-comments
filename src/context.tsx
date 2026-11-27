@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { TextAnchor } from './anchor.js';
 import { ClientConfig, CommentsClient, createClient, Me, Target, Thread } from './api.js';
+import type { Person } from './mentions.js';
 
 export const targetKey = (t: Pick<Target, 'type' | 'id'>) => `${t.type}:${t.id}`;
 
@@ -12,6 +13,8 @@ interface Draft {
 interface CommentsState {
   client: CommentsClient;
   me: Me | null;
+  /** Everyone who can be mentioned. */
+  people: Person[];
   threads: Record<string, Thread[] | undefined>;
   errors: Record<string, string | undefined>;
   load: (target: Target) => Promise<void>;
@@ -57,6 +60,7 @@ export function CommentsProvider({ children, apiUrl, app, getToken, refreshToken
     [apiUrl, app]
   );
   const [me, setMe] = useState<Me | null>(null);
+  const [people, setPeople] = useState<Person[]>([]);
   const [threads, setThreads] = useState<Record<string, Thread[] | undefined>>({});
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
   const [version, setVersion] = useState(0);
@@ -66,6 +70,7 @@ export function CommentsProvider({ children, apiUrl, app, getToken, refreshToken
 
   useEffect(() => {
     client.me().then(setMe, () => setMe(null));
+    client.people().then(setPeople, () => setPeople([]));
   }, [client]);
 
   const load = useCallback(
@@ -105,8 +110,8 @@ export function CommentsProvider({ children, apiUrl, app, getToken, refreshToken
   }, []);
 
   const value = useMemo<CommentsState>(
-    () => ({ client, me, threads, errors, load, put, version, bump, focused, focus, draft, setDraft, located, report }),
-    [client, me, threads, errors, load, put, version, bump, focused, draft, located, report]
+    () => ({ client, me, people, threads, errors, load, put, version, bump, focused, focus, draft, setDraft, located, report }),
+    [client, me, people, threads, errors, load, put, version, bump, focused, draft, located, report]
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

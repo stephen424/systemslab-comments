@@ -141,6 +141,27 @@ describe('comments API', () => {
     await request(app).patch(`/api/threads/${lifecycle.id}`).set(as(ANNA)).send({ status: 'declined' }).expect(403);
   });
 
+  it('lists people to mention, and finds the threads someone was mentioned in', async () => {
+    const people = (await request(app).get('/api/people').set(as(PEET)).expect(200)).body.data;
+    expect(people.map((p: { name: string }) => p.name)).toEqual(['Anna', 'Boss', 'Peet', 'Vera']);
+
+    const body = `@[Anna](${ANNA}) can you check this? Also @[Lena](${LENA}) and @[Ghost](99999999-9999-9999-9999-999999999999)`;
+    const thread = (await start(PEET, { target_id: 'PR-SM-010', body }).expect(201)).body.data;
+    // Only real, active accounts are recorded as mentioned.
+    expect(thread.comments[0].mentions).toEqual([ANNA]);
+
+    const mine = await request(app).get('/api/threads?app=practice&mentions=me').set(as(ANNA)).expect(200);
+    expect(mine.body.data.map((t: { id: string }) => t.id)).toEqual([thread.id]);
+    expect((await request(app).get('/api/threads?app=practice&mentions=me').set(as(BOSS, 'admin'))).body.data).toEqual([]);
+    await request(app).get('/api/threads?app=practice&mentions=you').set(as(ANNA)).expect(400);
+
+    // A reply can mention someone else; editing the mention away removes it.
+    const reply = await request(app).post(`/api/threads/${thread.id}/comments`).set(as(ANNA)).send({ body: `@[Boss](${BOSS}) over to you` }).expect(201);
+    expect((await request(app).get('/api/threads?app=practice&mentions=me').set(as(BOSS, 'admin'))).body.data).toHaveLength(1);
+    await request(app).patch(`/api/comments/${reply.body.data.comments[1].id}`).set(as(ANNA)).send({ body: 'never mind' }).expect(200);
+    expect((await request(app).get('/api/threads?app=practice&mentions=me').set(as(BOSS, 'admin'))).body.data).toEqual([]);
+  });
+
   it('answers unknown ids with 404 and malformed ones with 400', async () => {
     await request(app).post('/api/threads/00000000-0000-0000-0000-000000000000/comments').set(as(PEET)).send({ body: 'x' }).expect(404);
     await request(app).patch('/api/threads/not-a-uuid').set(as(BOSS, 'admin')).send({ status: 'open' }).expect(400);

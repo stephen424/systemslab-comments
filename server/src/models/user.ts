@@ -20,6 +20,14 @@ export const findUserById = async (id: string): Promise<SystemslabUser | null> =
   return result.rows[0] ?? null;
 };
 
+/** Active Systemslab.ai accounts, for mentioning people in comments. */
+export const listPeople = async (): Promise<{ id: string; name: string }[]> => {
+  const result = await query<{ id: string; name: string }>(
+    `SELECT id, COALESCE(NULLIF(full_name, ''), email) AS name FROM public.users WHERE is_active ORDER BY 2`
+  );
+  return result.rows;
+};
+
 /** Viewers can read comments but not write them. */
 export const canComment = (user: SystemslabUser): boolean => user.role !== 'viewer';
 

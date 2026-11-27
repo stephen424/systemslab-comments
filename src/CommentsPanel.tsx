@@ -2,6 +2,8 @@ import { FormEvent, useState } from 'react';
 import type { Target, Thread } from './api.js';
 import { useCommentsState, useThreads } from './context.js';
 import { ThreadCard } from './ThreadCard.js';
+import { MentionTextarea } from './MentionTextarea.js';
+import { DraftText, emptyDraft, encode } from './mentions.js';
 
 export interface CommentsPanelProps {
   target: Target;
@@ -18,8 +20,8 @@ export interface CommentsPanelProps {
 export function CommentsPanel({ target, title = 'Comments', placeholder = 'Comment on this page' }: CommentsPanelProps) {
   const state = useCommentsState();
   const { key, threads, error } = useThreads(target);
-  const [body, setBody] = useState('');
-  const [general, setGeneral] = useState('');
+  const [body, setBody] = useState<DraftText>(emptyDraft);
+  const [general, setGeneral] = useState<DraftText>(emptyDraft);
   const [showClosed, setShowClosed] = useState(false);
   const [busy, setBusy] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -34,19 +36,19 @@ export function CommentsPanel({ target, title = 'Comments', placeholder = 'Comme
     state.bump();
   };
 
-  const start = async (e: FormEvent, text: string, anchored: boolean) => {
-    e.preventDefault();
-    if (!text.trim()) return;
+  const start = async (e: FormEvent | undefined, text: DraftText, anchored: boolean) => {
+    e?.preventDefault();
+    if (!text.text.trim()) return;
     setBusy(true);
     setFailure(null);
     try {
-      const thread = await state.client.start(target, text.trim(), anchored && draft ? draft.anchor : null);
+      const thread = await state.client.start(target, encode(text), anchored && draft ? draft.anchor : null);
       state.put(key, thread);
       state.bump();
       if (anchored) {
         state.setDraft(null);
-        setBody('');
-      } else setGeneral('');
+        setBody(emptyDraft());
+      } else setGeneral(emptyDraft());
       state.focus(thread.id);
     } catch (err) {
       setFailure(err instanceof Error ? err.message : 'The comment was not saved');
@@ -81,9 +83,9 @@ export function CommentsPanel({ target, title = 'Comments', placeholder = 'Comme
       {draft && (
         <form className="slc-thread slc-thread--focused slc-form" onSubmit={e => start(e, body, true)}>
           <blockquote className="slc-quote">{draft.anchor.quote}</blockquote>
-          <textarea aria-label="New comment" autoFocus placeholder="Add a comment" value={body} onChange={e => setBody(e.target.value)} rows={3} />
+          <MentionTextarea label="New comment" autoFocus placeholder="Add a comment, or @ to mention someone" value={body} onChange={setBody} onSubmit={() => start(undefined, body, true)} />
           <div className="slc-actions">
-            <button type="submit" disabled={busy || !body.trim()}>Comment</button>
+            <button type="submit" disabled={busy || !body.text.trim()}>Comment</button>
             <button type="button" className="slc-link" onClick={() => state.setDraft(null)}>Cancel</button>
           </div>
         </form>
@@ -94,8 +96,8 @@ export function CommentsPanel({ target, title = 'Comments', placeholder = 'Comme
       {open.map(card)}
       {state.me?.can_comment && (
         <form className="slc-form" onSubmit={e => start(e, general, false)}>
-          <textarea aria-label={placeholder} placeholder={placeholder} value={general} onChange={e => setGeneral(e.target.value)} rows={general ? 3 : 1} />
-          {general && (
+          <MentionTextarea label={placeholder} placeholder={placeholder} value={general} onChange={setGeneral} rows={general.text ? 3 : 1} onSubmit={() => start(undefined, general, false)} />
+          {general.text && (
             <div className="slc-actions">
               <button type="submit" disabled={busy}>Comment</button>
             </div>

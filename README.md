@@ -2,6 +2,8 @@
 
 Notion-style inline comments for every Systemslab.ai app. People select text and comment on it, or comment on a page as a whole, and reply in threads. An admin of that app works through the open threads, makes the edits themselves, and marks each thread **incorporated** (noting the revision it went into) or **declined** (with a reason). Closed threads stay on record.
 
+Typing **@** in any comment box offers the Systemslab.ai people to mention. Everyone sees their mentions under *Mentioned me* in the review list. There are no email notifications yet.
+
 Practice uses it first. Lifecycle and Form can add it with a small adapter, described below.
 
 ## What is in this repository
@@ -35,9 +37,13 @@ Everything is under `/api` and needs a Systemslab.ai access token (`Authorizatio
 | `GET /me?app=practice` | Who you are in this app: `can_comment`, `is_admin` |
 | `GET /threads?app=…&target_type=…&target_id=…` | Threads on one target, with their comments |
 | `GET /threads?app=…&status=open\|closed\|all` | Every thread in the app (the review list), open threads by default |
+| `GET /threads?app=…&mentions=me` | Threads where someone mentioned you |
+| `GET /people` | Active accounts, for the @ list |
 | `GET /counts?app=…[&target_type=…]` | Open threads per target, for badges |
 | `POST /threads` | Start a thread: `{ app, target_type, target_id, target_rev?, anchor?, body }` |
 | `POST /threads/:id/comments` | Reply: `{ body }` |
+
+A body holds each mention as `@[Name](user id)`. The package turns what people type ("@Anna Smith") into that, and back for display. Only active accounts are recorded as mentioned.
 | `PATCH /threads/:id` | Admin: `{ status: 'incorporated' \| 'declined' \| 'open', note?, resolved_rev? }` |
 | `DELETE /threads/:id` | Remove a thread |
 | `PATCH /comments/:id`, `DELETE /comments/:id` | Edit or delete a comment |

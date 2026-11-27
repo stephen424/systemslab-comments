@@ -1,8 +1,25 @@
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import type { CommentsClient, Me, Thread } from './api.js';
+import { MentionTextarea } from './MentionTextarea.js';
+import { decode, DraftText, emptyDraft, encode, parts } from './mentions.js';
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+/** A comment body with its mentions shown as names; mentions of the reader stand out. */
+export function Body({ body, me }: { body: string; me: Me | null }) {
+  return (
+    <>
+      {parts(body).map((p, i) =>
+        'mention' in p ? (
+          <span key={i} className={`slc-mention${p.mention.id === me?.id ? ' slc-mention--me' : ''}`}>@{p.mention.name}</span>
+        ) : (
+          p.text
+        )
+      )}
+    </>
+  );
+}
 
 const STATUS_LABEL = { open: 'Open', incorporated: 'Incorporated', declined: 'Declined' } as const;
 
@@ -21,8 +38,8 @@ export interface ThreadCardProps {
 /** One thread: the quote, the comments, a reply box, and for admins the incorporate / decline controls. */
 export function ThreadCard({ thread, client, me, onChange, focused, onFocus, lost }: ThreadCardProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const [reply, setReply] = useState('');
-  const [editing, setEditing] = useState<{ id: string; body: string } | null>(null);
+  const [reply, setReply] = useState<DraftText>(emptyDraft);
+  const [editing, setEditing] = useState<{ id: string; draft: DraftText } | null>(null);
   const [closing, setClosing] = useState<'incorporated' | 'declined' | null>(null);
   const [note, setNote] = useState('');
   const [rev, setRev] = useState('');
@@ -47,16 +64,16 @@ export function ThreadCard({ thread, client, me, onChange, focused, onFocus, los
     }
   };
 
-  const sendReply = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!reply.trim()) return;
-    if (await run(() => client.reply(thread.id, reply.trim()))) setReply('');
+  const sendReply = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (!reply.text.trim()) return;
+    if (await run(() => client.reply(thread.id, encode(reply)))) setReply(emptyDraft());
   };
 
-  const saveEdit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!editing?.body.trim()) return;
-    if (await run(() => client.edit(editing.id, editing.body.trim()))) setEditing(null);
+  const saveEdit = async (e?: FormEvent) => {
+    e?.preventDefault();
+    if (!editing?.draft.text.trim()) return;
+    if (await run(() => client.edit(editing.id, encode(editing.draft)))) setEditing(null);
   };
 
   const close = async (e: FormEvent) => {
@@ -104,7 +121,7 @@ export function ThreadCard({ thread, client, me, onChange, focused, onFocus, los
               <div className="slc-body slc-deleted">Comment deleted</div>
             ) : editing?.id === c.id ? (
               <form onSubmit={saveEdit} className="slc-form">
-                <textarea aria-label="Edit comment" value={editing.body} onChange={e => setEditing({ id: c.id, body: e.target.value })} rows={3} />
+                <MentionTextarea label="Edit comment" value={editing.draft} onChange={draft => setEditing({ id: c.id, draft })} onSubmit={saveEdit} />
                 <div className="slc-actions">
                   <button type="submit" disabled={busy}>Save</button>
                   <button type="button" className="slc-link" onClick={() => setEditing(null)}>Cancel</button>
@@ -112,11 +129,13 @@ export function ThreadCard({ thread, client, me, onChange, focused, onFocus, los
               </form>
             ) : (
               <>
-                <div className="slc-body">{c.body}</div>
+                <div className="slc-body">
+                  <Body body={c.body} me={me} />
+                </div>
                 {me && (c.author_id === me.id || me.is_admin) && (
                   <div className="slc-actions slc-actions--quiet">
                     {c.author_id === me.id && (
-                      <button type="button" className="slc-link" onClick={() => setEditing({ id: c.id, body: c.body })}>Edit</button>
+                      <button type="button" className="slc-link" onClick={() => setEditing({ id: c.id, draft: decode(c.body) })}>Edit</button>
                     )}
                     <button type="button" className="slc-link" disabled={busy} onClick={() => run(() => client.removeComment(c.id))}>
                       Delete
@@ -130,8 +149,8 @@ export function ThreadCard({ thread, client, me, onChange, focused, onFocus, los
       </ol>
       {me?.can_comment && (
         <form onSubmit={sendReply} className="slc-form">
-          <textarea aria-label="Reply" placeholder="Reply" value={reply} onChange={e => setReply(e.target.value)} rows={reply ? 3 : 1} />
-          {reply && (
+          <MentionTextarea label="Reply" placeholder="Reply, or @ to mention someone" value={reply} onChange={setReply} rows={reply.text ? 3 : 1} onSubmit={sendReply} />
+          {reply.text && (
             <div className="slc-actions">
               <button type="submit" disabled={busy}>Reply</button>
             </div>

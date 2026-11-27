@@ -1,7 +1,7 @@
 import { NextFunction, Response, Router } from 'express';
 import { env } from '../config/environment';
 import { AuthRequest } from '../middleware/auth';
-import { canComment, isAppAdmin, SystemslabUser } from '../models/user';
+import { canComment, isAppAdmin, listPeople, SystemslabUser } from '../models/user';
 import {
   addComment,
   Anchor,
@@ -91,9 +91,18 @@ router.get(
   })
 );
 
+/** Everyone who can be mentioned. */
+router.get(
+  '/people',
+  handle(async (_req, res) => {
+    res.json({ success: true, data: await listPeople() });
+  })
+);
+
 /**
  * Threads with their comments. With target_type and target_id, the threads on that target; without, the
- * whole app (the admin's review list), open threads by default.
+ * whole app (the admin's review list), open threads by default. With mentions=me, only the threads where
+ * someone mentioned the signed-in person.
  */
 router.get(
   '/threads',
@@ -103,7 +112,9 @@ router.get(
     const id = text(req.query.target_id, 'target_id', LIMITS.key, false) ?? undefined;
     const status = (req.query.status ?? (id ? 'all' : 'open')) as StatusFilter;
     if (!STATUS_FILTERS.includes(status)) throw new BadRequest(`status must be one of ${STATUS_FILTERS.join(', ')}`);
-    res.json({ success: true, data: await listThreads(app, { type, id, status }) });
+    if (req.query.mentions !== undefined && req.query.mentions !== 'me') throw new BadRequest('mentions can only be me');
+    const mentioning = req.query.mentions === 'me' ? req.user!.id : undefined;
+    res.json({ success: true, data: await listThreads(app, { type, id, status, mentioning }) });
   })
 );
 

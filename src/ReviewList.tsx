@@ -13,14 +13,15 @@ export interface ReviewListProps {
 /** Every thread in the app, grouped by what it is on: the admin's list to work through. */
 export function ReviewList({ renderTarget, sortKey }: ReviewListProps) {
   const state = useCommentsState();
-  const [status, setStatus] = useState<'open' | 'closed'>('open');
+  const [status, setStatus] = useState<'open' | 'mentions' | 'closed'>('open');
   const [threads, setThreads] = useState<Thread[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const { client, version } = state;
 
   useEffect(() => {
     let live = true;
-    client.allThreads(status).then(
+    const request = status === 'mentions' ? client.allThreads('open', true) : client.allThreads(status);
+    request.then(
       list => live && (setThreads(list), setError(null)),
       e => live && setError(e instanceof Error ? e.message : 'Comments could not be loaded')
     );
@@ -45,14 +46,14 @@ export function ReviewList({ renderTarget, sortKey }: ReviewListProps) {
   return (
     <div className="slc-review">
       <div className="slc-tabs" role="tablist">
-        {(['open', 'closed'] as const).map(s => (
+        {(['open', 'mentions', 'closed'] as const).map(s => (
           <button key={s} type="button" role="tab" aria-selected={status === s} className={status === s ? 'slc-tab slc-tab--on' : 'slc-tab'} onClick={() => setStatus(s)}>
-            {s === 'open' ? 'Open' : 'Closed'}
+            {s === 'open' ? 'Open' : s === 'mentions' ? 'Mentioned me' : 'Closed'}
           </button>
         ))}
       </div>
       {error && <div className="slc-error">{error}</div>}
-      {threads && threads.length === 0 && <p className="slc-empty">{status === 'open' ? 'Nothing waiting. Every comment has been dealt with.' : 'No closed comments yet.'}</p>}
+      {threads && threads.length === 0 && <p className="slc-empty">{status === 'open' ? 'Nothing waiting. Every comment has been dealt with.' : status === 'mentions' ? 'Nobody has mentioned you in an open thread.' : 'No closed comments yet.'}</p>}
       {ordered.map(list => (
         <section key={targetKey(list[0].target)} className="slc-group">
           <h3 className="slc-group-title">
@@ -67,7 +68,7 @@ export function ReviewList({ renderTarget, sortKey }: ReviewListProps) {
               me={state.me}
               onChange={next => {
                 state.put(targetKey(t.target), next, t.id);
-                setThreads(prev => (prev ?? []).flatMap(x => (x.id !== t.id ? [x] : next && (next.status === 'open') === (status === 'open') ? [next] : [])));
+                setThreads(prev => (prev ?? []).flatMap(x => (x.id !== t.id ? [x] : next && (next.status === 'open') === (status !== 'closed') ? [next] : [])));
                 state.bump();
               }}
             />

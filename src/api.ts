@@ -18,6 +18,8 @@ export interface Comment {
   created_at: string;
   edited_at: string | null;
   deleted: boolean;
+  /** Ids of the people mentioned in the body. */
+  mentions: string[];
 }
 
 export interface Thread {
@@ -84,9 +86,12 @@ export const createClient = (config: ClientConfig) => {
   return {
     app: config.app,
     me: () => send<Me>('GET', `/me?${q({})}`),
+    /** Everyone who can be mentioned. */
+    people: () => send<{ id: string; name: string }[]>('GET', '/people'),
     threads: (target: Target) => send<Thread[]>('GET', `/threads?${q({ target_type: target.type, target_id: target.id })}`),
     /** Every thread in the app with this status: the admin's review list. */
-    allThreads: (status: 'open' | 'closed' | 'all' = 'open') => send<Thread[]>('GET', `/threads?${q({ status })}`),
+    allThreads: (status: 'open' | 'closed' | 'all' = 'open', mentioningMe = false) =>
+      send<Thread[]>('GET', `/threads?${q({ status, mentions: mentioningMe ? 'me' : undefined })}`),
     counts: (targetType?: string) => send<{ type: string; id: string; open: number }[]>('GET', `/counts?${q({ target_type: targetType })}`),
     start: (target: Target, body: string, anchor: TextAnchor | null) =>
       send<Thread>('POST', '/threads', {
